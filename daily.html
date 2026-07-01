@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>デイリー | 12ヶ月手帳</title>
+<style>
+  :root{
+    --bg:#14152b; --bg2:#1c1f3d; --card:#20234a; --line:#33366a;
+    --ink:#f2efe8; --sub:#9b9fd4; --red:#e2564d; --blue:#5b8fe0;
+    --gold:#c9a961; --accent1:#7b5fc9; --accent2:#c9548f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+    color:var(--ink); padding-bottom:calc(30px + env(safe-area-inset-bottom));
+  }
+  header{
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 14px;
+    background:linear-gradient(120deg,var(--accent1),var(--accent2));
+    position:sticky; top:0; z-index:20;
+  }
+  .navRow{display:flex; align-items:center; justify-content:space-between;}
+  .backBtn{background:rgba(255,255,255,.18); border:none; color:#fff; font-size:13px; font-weight:700; padding:7px 12px; border-radius:14px;}
+  .dayNav{display:flex; align-items:center; gap:10px;}
+  .dayNav button{background:rgba(255,255,255,.18); border:none; color:#fff; width:30px;height:30px; border-radius:8px; font-size:16px; font-weight:700;}
+  .dateLabel{text-align:center; margin-top:8px;}
+  .dateLabel .big{font-size:24px; font-weight:800;}
+  .dateLabel .small{font-size:12px; color:rgba(255,255,255,.8); font-weight:600; margin-top:2px;}
+
+  section{padding:14px 14px 4px;}
+  .secTitle{font-size:12px; color:var(--gold); font-weight:800; letter-spacing:1px; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+  .secTitle .diamond{width:7px;height:7px;background:var(--gold); transform:rotate(45deg); display:inline-block;}
+
+  .taskList{display:flex; flex-direction:column; gap:7px;}
+  .taskRow{display:flex; align-items:center; gap:9px;}
+  .taskNum{width:18px; flex:0 0 auto; font-size:11px; color:var(--sub); font-weight:700; text-align:center;}
+  .taskCheck{
+    width:26px;height:26px; border-radius:7px; border:1px solid var(--line); background:var(--card);
+    flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:800;
+  }
+  .taskCheck.on{background:linear-gradient(120deg,var(--accent1),var(--accent2)); border-color:transparent;}
+  .taskRow input{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:8px;
+    color:var(--ink); font-size:13px; padding:8px 10px; min-width:0;
+  }
+  .taskRow.done input{color:var(--sub); text-decoration:line-through;}
+  .templateBtn{
+    margin-top:10px; width:100%; padding:9px; border-radius:9px; border:1px solid var(--gold);
+    background:rgba(201,169,97,.1); color:var(--gold); font-size:12px; font-weight:700;
+  }
+
+  /* time schedule */
+  .schedGrid{display:grid; grid-template-columns:1fr 1fr; gap:0 10px;}
+  .schedRow{display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); padding:7px 0;}
+  .schedRow .hr{width:40px; flex:0 0 auto; font-size:11px; color:var(--sub); font-weight:700;}
+  .schedRow input{
+    flex:1; background:transparent; border:none; border-bottom:1px dashed var(--line);
+    color:var(--ink); font-size:12.5px; padding:3px 2px; min-width:0;
+  }
+  .schedRow input:focus{outline:none; border-bottom-color:var(--gold);}
+
+  textarea{
+    width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    color:var(--ink); font-size:13.5px; padding:10px; min-height:70px; resize:vertical;
+    font-family:inherit;
+  }
+
+  .quickList{display:flex; flex-direction:column; gap:6px;}
+  .qItem{display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:12.5px;}
+  .qItem .dot{width:6px;height:6px; transform:rotate(45deg); flex:0 0 auto;}
+  .qItem.red .dot{background:var(--red);} .qItem.blue .dot{background:var(--blue);}
+  .qEmpty{color:var(--sub); font-size:12px; padding:4px 2px;}
+
+  .savedTag{position:fixed; bottom:16px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:var(--gold); color:#20234a; font-weight:800; font-size:12px; padding:7px 16px; border-radius:20px;
+    transition:opacity .25s, transform .25s; z-index:40;}
+  .savedTag.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="navRow">
+    <button class="backBtn" id="backBtn">‹ マンスリー</button>
+    <div class="dayNav">
+      <button id="prevDay">‹</button>
+      <button id="nextDay">›</button>
+    </div>
+  </div>
+  <div class="dateLabel">
+    <div class="big" id="bigDate">7月1日</div>
+    <div class="small" id="smallDate">2026年 / 水曜日</div>
+  </div>
+</header>
+
+<section>
+  <div class="secTitle"><span class="diamond"></span>今日のタスク（13個）</div>
+  <div class="taskList" id="taskList"></div>
+  <button class="templateBtn" id="saveTemplate">☆ この内容を毎日のひな形として保存</button>
+</section>
+
+<section>
+  <div class="secTitle"><span class="diamond"></span>予定 (マンスリーから)</div>
+  <div class="quickList" id="quickList"></div>
+</section>
+
+<section>
+  <div class="secTitle"><span class="diamond"></span>TIME SCHEDULE</div>
+  <div class="schedGrid">
+    <div id="schedAM"></div>
+    <div id="schedPM"></div>
+  </div>
+</section>
+
+<section>
+  <div class="secTitle"><span class="diamond"></span>今日学んだ事</div>
+  <textarea id="learned" placeholder="今日の気づき・学びを書く"></textarea>
+</section>
+
+<section style="padding-bottom:24px;">
+  <div class="secTitle"><span class="diamond"></span>DAILY RECORD OF EVENTS</div>
+  <textarea id="record" placeholder="今日の出来事の記録" style="min-height:100px;"></textarea>
+</section>
+
+<div class="savedTag" id="savedTag">保存しました</div>
+
+<script>
+(function(){
+  var CAL_KEY = "diamond_calendar_v1";
+  var DAILY_KEY = "diamond_daily_v1";
+  var TEMPLATE_KEY = "diamond_task_template_v1";
+  var calState = loadJSON(CAL_KEY, {});
+  var dailyState = loadJSON(DAILY_KEY, {});
+  var taskTemplate = loadJSON(TEMPLATE_KEY, null); // array of 13 strings or null
+
+  function loadJSON(key, fallback){
+    try{ var r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; }catch(e){ return fallback; }
+  }
+  function saveJSON(key, obj){
+    try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){}
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  var today = new Date();
+  var y = parseInt(params.get('y')) || today.getFullYear();
+  var m = parseInt(params.get('m')) || (today.getMonth()+1); // 1-12
+  var d = parseInt(params.get('d')) || today.getDate();
+
+  var youbi = ['日','月','火','水','木','金','土'];
+  var AM_HOURS = [6,7,8,9,10,11,12,13,14,15,16];
+  var PM_HOURS = [17,18,19,20,21,22,23,24,1,2,3];
+
+  function key(){ return y+"-"+m+"-"+d; }
+
+  function dayData(){
+    var k = key();
+    if(!dailyState[k]){
+      var initTasks = [];
+      for(var i=0;i<13;i++){
+        initTasks.push({ text: (taskTemplate && taskTemplate[i]) ? taskTemplate[i] : "", done:false });
+      }
+      dailyState[k] = { tasks:initTasks, hours:{}, learned:"", record:"" };
+    }
+    // migrate old data that used "checks" boolean array
+    if(!dailyState[k].tasks){
+      var old = dailyState[k].checks || [];
+      var migrated = [];
+      for(var j=0;j<13;j++){
+        migrated.push({ text:"", done: !!old[j] });
+      }
+      dailyState[k].tasks = migrated;
+      delete dailyState[k].checks;
+    }
+    return dailyState[k];
+  }
+
+  function render(){
+    var dt = new Date(y, m-1, d);
+    document.getElementById('bigDate').textContent = m+"月"+d+"日";
+    document.getElementById('smallDate').textContent = y+"年 / "+youbi[dt.getDay()]+"曜日";
+
+    var data = dayData();
+
+    // task list
+    var taskList = document.getElementById('taskList');
+    taskList.innerHTML = "";
+    data.tasks.forEach(function(task, idx){
+      var row = document.createElement('div');
+      row.className = 'taskRow' + (task.done ? ' done':'');
+
+      var num = document.createElement('div');
+      num.className='taskNum';
+      num.textContent = idx+1;
+
+      var cb = document.createElement('button');
+      cb.className = 'taskCheck' + (task.done ? ' on':'');
+      cb.textContent = task.done ? '✓' : '';
+      cb.addEventListener('click', function(){
+        task.done = !task.done;
+        saveJSON(DAILY_KEY, dailyState);
+        render();
+        flashSaved();
+      });
+
+      var input = document.createElement('input');
+      input.type='text';
+      input.placeholder = 'タスク '+(idx+1);
+      input.value = task.text || "";
+      input.addEventListener('input', function(){ task.text = input.value; });
+      input.addEventListener('change', function(){
+        saveJSON(DAILY_KEY, dailyState);
+        flashSaved();
+      });
+
+      row.appendChild(num);
+      row.appendChild(cb);
+      row.appendChild(input);
+      taskList.appendChild(row);
+    });
+
+    // quick list from monthly
+    var qList = document.getElementById('quickList');
+    var notes = calState[key()] || [];
+    qList.innerHTML = "";
+    if(notes.length===0){
+      var e = document.createElement('div');
+      e.className='qEmpty';
+      e.textContent = 'マンスリーに登録された予定はありません';
+      qList.appendChild(e);
+    } else {
+      notes.forEach(function(n){
+        var row = document.createElement('div');
+        row.className = 'qItem ' + n.color;
+        row.innerHTML = '<span class="dot"></span><span></span>';
+        row.querySelector('span:last-child').textContent = n.text;
+        qList.appendChild(row);
+      });
+    }
+
+    // schedules
+    var schedAM = document.getElementById('schedAM');
+    var schedPM = document.getElementById('schedPM');
+    schedAM.innerHTML = ""; schedPM.innerHTML = "";
+    function buildRows(container, hours){
+      hours.forEach(function(h){
+        var row = document.createElement('div');
+        row.className = 'schedRow';
+        var label = document.createElement('div');
+        label.className='hr';
+        label.textContent = h + ":00";
+        var input = document.createElement('input');
+        input.type='text';
+        input.value = data.hours[h] || "";
+        input.placeholder = "";
+        input.addEventListener('change', function(){
+          data.hours[h] = input.value;
+          saveJSON(DAILY_KEY, dailyState);
+          flashSaved();
+        });
+        row.appendChild(label);
+        row.appendChild(input);
+        container.appendChild(row);
+      });
+    }
+    buildRows(schedAM, AM_HOURS);
+    buildRows(schedPM, PM_HOURS);
+
+    // textareas
+    var learned = document.getElementById('learned');
+    var record = document.getElementById('record');
+    learned.value = data.learned || "";
+    record.value = data.record || "";
+    learned.oninput = function(){ data.learned = learned.value; saveJSON(DAILY_KEY, dailyState); };
+    record.oninput = function(){ data.record = record.value; saveJSON(DAILY_KEY, dailyState); };
+  }
+
+  var savedTimer = null;
+  function flashSaved(){
+    var tag = document.getElementById('savedTag');
+    tag.classList.add('show');
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(function(){ tag.classList.remove('show'); }, 1000);
+  }
+
+  document.getElementById('saveTemplate').addEventListener('click', function(){
+    var data = dayData();
+    taskTemplate = data.tasks.map(function(t){ return t.text; });
+    saveJSON(TEMPLATE_KEY, taskTemplate);
+    flashSaved();
+  });
+
+  document.getElementById('backBtn').addEventListener('click', function(){
+    window.location.href = 'calendar12.html';
+  });
+  document.getElementById('prevDay').addEventListener('click', function(){
+    var dt = new Date(y, m-1, d); dt.setDate(dt.getDate()-1);
+    y = dt.getFullYear(); m = dt.getMonth()+1; d = dt.getDate();
+    render();
+  });
+  document.getElementById('nextDay').addEventListener('click', function(){
+    var dt = new Date(y, m-1, d); dt.setDate(dt.getDate()+1);
+    y = dt.getFullYear(); m = dt.getMonth()+1; d = dt.getDate();
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
