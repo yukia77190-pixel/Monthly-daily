@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="12ヶ月手帳">
+<title>12ヶ月手帳</title>
+<style>
+  :root{
+    --bg:#14152b;
+    --bg2:#1c1f3d;
+    --card:#20234a;
+    --line:#33366a;
+    --ink:#f2efe8;
+    --sub:#9b9fd4;
+    --red:#e2564d;
+    --blue:#5b8fe0;
+    --gold:#c9a961;
+    --accent1:#7b5fc9;
+    --accent2:#c9548f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);}
+  body{
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+    color:var(--ink);
+    overscroll-behavior-y:contain;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 10px;
+    background:linear-gradient(120deg,var(--accent1),var(--accent2));
+    position:sticky; top:0; z-index:20;
+  }
+  .headtop{display:flex; align-items:baseline; justify-content:space-between;}
+  .brand{font-size:13px; letter-spacing:2px; color:rgba(255,255,255,.75); font-weight:600;}
+  .yearRow{display:flex; align-items:center; gap:10px; margin-top:2px;}
+  .yearRow button{
+    background:rgba(255,255,255,.15); border:none; color:#fff; width:32px;height:32px;
+    border-radius:8px; font-size:18px; font-weight:700;
+  }
+  .yearRow h1{font-size:28px; margin:0; font-weight:800; letter-spacing:1px;}
+
+  .monthTabs{
+    display:flex; overflow-x:auto; gap:6px; padding:10px 12px 12px;
+    background:var(--bg2); position:sticky; top:0; z-index:19;
+    scrollbar-width:none;
+  }
+  .monthTabs::-webkit-scrollbar{display:none;}
+  .mtab{
+    flex:0 0 auto; padding:7px 13px; border-radius:20px; font-size:13px; font-weight:700;
+    background:var(--card); color:var(--sub); border:1px solid var(--line); white-space:nowrap;
+  }
+  .mtab.active{
+    background:linear-gradient(120deg,var(--accent1),var(--accent2));
+    color:#fff; border-color:transparent;
+  }
+
+  main{padding:14px 10px 40px;}
+  .weekHead{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:6px; padding:0 2px;}
+  .weekHead div{text-align:center; font-size:11px; color:var(--sub); font-weight:700;}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
+  .cell{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    height:84px; padding:5px; position:relative; overflow:hidden;
+  }
+  .cell.empty{background:transparent; border-color:transparent;}
+  .cell.sun .dnum{color:var(--red);}
+  .cell.sat .dnum{color:var(--blue);}
+  .dnum{font-size:12px; font-weight:700; color:var(--ink); opacity:.85;}
+  .cell.today{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset;}
+  .cell.today .dnum{color:var(--gold);}
+  .notes{margin-top:3px; display:flex; flex-direction:column; gap:2px; overflow:hidden;}
+  .note{
+    font-size:10.5px; line-height:1.25; display:flex; gap:3px; align-items:flex-start;
+    overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  }
+  .note .t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .more{font-size:9.5px; color:var(--sub); font-weight:700; margin-top:1px;}
+  .note .dot{flex:0 0 auto; margin-top:3px; width:5px;height:5px; border-radius:1px; transform:rotate(45deg);}
+  .note.red .dot{background:var(--red);}
+  .note.blue .dot{background:var(--blue);}
+  .note.red span.t{color:#ff9d94;}
+  .note.blue span.t{color:#a9c6f5;}
+
+  /* Sheet */
+  .sheetBg{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:50;
+    display:none; align-items:flex-end;
+  }
+  .sheetBg.show{display:flex;}
+  .sheet{
+    background:var(--bg2); width:100%; border-radius:18px 18px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height:80vh; overflow-y:auto;
+  }
+  .sheet h2{margin:0 0 12px; font-size:16px; color:var(--gold); font-weight:700;}
+  .existing{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .exItem{
+    display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line);
+    border-radius:10px; padding:8px 10px; font-size:13px;
+  }
+  .exItem .swatch{width:9px;height:9px; border-radius:2px; transform:rotate(45deg); flex:0 0 auto;}
+  .exItem.red .swatch{background:var(--red);}
+  .exItem.blue .swatch{background:var(--blue);}
+  .exItem .txt{flex:1;}
+  .exItem .del{color:var(--sub); font-size:16px; padding:2px 6px;}
+
+  .inputRow{display:flex; gap:8px; margin-bottom:10px;}
+  .inputRow input{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:11px 12px; color:var(--ink); font-size:15px;
+  }
+  .colorPick{display:flex; gap:8px; margin-bottom:12px;}
+  .colorPick button{
+    flex:1; padding:9px; border-radius:10px; border:1px solid var(--line); background:var(--card);
+    font-size:13px; font-weight:700; color:var(--sub);
+  }
+  .colorPick button.selRed{background:rgba(226,86,77,.18); border-color:var(--red); color:#ff9d94;}
+  .colorPick button.selBlue{background:rgba(91,143,224,.18); border-color:var(--blue); color:#a9c6f5;}
+  .actions{display:flex; gap:8px;}
+  .actions button{
+    flex:1; padding:12px; border-radius:10px; border:none; font-size:14px; font-weight:700;
+  }
+  .btnAdd{background:linear-gradient(120deg,var(--accent1),var(--accent2)); color:#fff;}
+  .btnClose{background:var(--card); color:var(--sub); border:1px solid var(--line);}
+  .btnDaily{
+    width:100%; margin-top:10px; padding:11px; border-radius:10px; border:1px solid var(--gold);
+    background:rgba(201,169,97,.12); color:var(--gold); font-size:13px; font-weight:700;
+  }
+
+  .hint{text-align:center; color:var(--sub); font-size:11px; padding:14px 20px 0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="headtop">
+    <div class="brand">◈ DAILY DIAMOND ◈</div>
+    <button id="todayDaily" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:14px;">📝 今日を開く</button>
+  </div>
+  <div class="yearRow">
+    <button id="yPrev">‹</button>
+    <h1 id="yearLabel">2026</h1>
+    <button id="yNext">›</button>
+  </div>
+</header>
+
+<div class="monthTabs" id="monthTabs"></div>
+
+<main>
+  <div class="weekHead">
+    <div style="color:var(--red)">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div style="color:var(--blue)">土</div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="hint">日付をタップして予定を追加・確認できます</p>
+</main>
+
+<div class="sheetBg" id="sheetBg">
+  <div class="sheet">
+    <h2 id="sheetDate">7月1日 (水)</h2>
+    <div class="existing" id="existing"></div>
+    <div class="inputRow">
+      <input type="text" id="noteInput" placeholder="例）20:00 PLR面談" maxlength="60">
+    </div>
+    <div class="colorPick">
+      <button id="pickRed" class="selRed">🔴 予定</button>
+      <button id="pickBlue">🔵 メモ</button>
+    </div>
+    <div class="actions">
+      <button class="btnClose" id="closeSheet">閉じる</button>
+      <button class="btnAdd" id="addNote">追加する</button>
+    </div>
+    <button class="btnDaily" id="goDaily">📝 この日をデイリーで開く</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = "diamond_calendar_v1";
+  var state = load();
+  var today = new Date();
+  var curYear = today.getFullYear();
+  var curMonth = today.getMonth(); // 0-11
+  var pickedColor = "red";
+  var selectedKey = null;
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function dayKey(y,m,d){ return y+"-"+(m+1)+"-"+d; }
+  function getNotes(y,m,d){
+    var k = dayKey(y,m,d);
+    return state[k] || [];
+  }
+  function setNotes(y,m,d,list){
+    var k = dayKey(y,m,d);
+    if(list.length===0){ delete state[k]; } else { state[k]=list; }
+    save();
+  }
+
+  var monthTabsEl = document.getElementById('monthTabs');
+  var yearLabel = document.getElementById('yearLabel');
+  var gridEl = document.getElementById('grid');
+
+  function buildMonthTabs(){
+    monthTabsEl.innerHTML = "";
+    for(var m=0;m<12;m++){
+      var b = document.createElement('button');
+      b.className = 'mtab' + (m===curMonth ? ' active':'');
+      b.textContent = (m+1)+"月";
+      b.dataset.m = m;
+      b.addEventListener('click', function(){
+        curMonth = parseInt(this.dataset.m,10);
+        renderAll();
+      });
+      monthTabsEl.appendChild(b);
+    }
+  }
+
+  function renderAll(){
+    yearLabel.textContent = curYear + "年";
+    buildMonthTabs();
+    renderGrid();
+  }
+
+  function renderGrid(){
+    gridEl.innerHTML = "";
+    var firstDow = new Date(curYear, curMonth, 1).getDay();
+    var daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+
+    for(var i=0;i<firstDow;i++){
+      var empty = document.createElement('div');
+      empty.className = 'cell empty';
+      gridEl.appendChild(empty);
+    }
+
+    for(var d=1; d<=daysInMonth; d++){
+      var dow = new Date(curYear,curMonth,d).getDay();
+      var cell = document.createElement('div');
+      cell.className = 'cell' + (dow===0?' sun':'') + (dow===6?' sat':'');
+      if(curYear===today.getFullYear() && curMonth===today.getMonth() && d===today.getDate()){
+        cell.classList.add('today');
+      }
+      var dnum = document.createElement('div');
+      dnum.className='dnum';
+      dnum.textContent = d;
+      cell.appendChild(dnum);
+
+      var notesWrap = document.createElement('div');
+      notesWrap.className='notes';
+      var allNotes = getNotes(curYear,curMonth,d);
+      var notes = allNotes.slice(0,2);
+      notes.forEach(function(n){
+        var row = document.createElement('div');
+        row.className = 'note ' + n.color;
+        row.innerHTML = '<span class="dot"></span><span class="t">'+escapeHtml(n.text)+'</span>';
+        notesWrap.appendChild(row);
+      });
+      if(allNotes.length>2){
+        var more = document.createElement('div');
+        more.className='more';
+        more.textContent = '+'+(allNotes.length-2)+'件';
+        notesWrap.appendChild(more);
+      }
+      cell.appendChild(notesWrap);
+
+      cell.addEventListener('click', (function(dd){
+        return function(){ openSheet(dd); };
+      })(d));
+
+      gridEl.appendChild(cell);
+    }
+  }
+
+  function escapeHtml(s){
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // Sheet
+  var sheetBg = document.getElementById('sheetBg');
+  var sheetDate = document.getElementById('sheetDate');
+  var existingEl = document.getElementById('existing');
+  var noteInput = document.getElementById('noteInput');
+  var pickRed = document.getElementById('pickRed');
+  var pickBlue = document.getElementById('pickBlue');
+  var closeSheet = document.getElementById('closeSheet');
+  var addNoteBtn = document.getElementById('addNote');
+  var youbi = ['日','月','火','水','木','金','土'];
+
+  function openSheet(d){
+    selectedKey = d;
+    var dow = new Date(curYear,curMonth,d).getDay();
+    sheetDate.textContent = (curMonth+1)+"月"+d+"日 ("+youbi[dow]+")";
+    noteInput.value = "";
+    pickedColor = "red";
+    updateColorButtons();
+    renderExisting();
+    sheetBg.classList.add('show');
+  }
+  function renderExisting(){
+    var notes = getNotes(curYear,curMonth,selectedKey);
+    existingEl.innerHTML = "";
+    if(notes.length===0){
+      var p = document.createElement('div');
+      p.style.cssText='color:var(--sub);font-size:12px;padding:2px 2px 4px;';
+      p.textContent = "まだ予定はありません";
+      existingEl.appendChild(p);
+      return;
+    }
+    notes.forEach(function(n, idx){
+      var row = document.createElement('div');
+      row.className = 'exItem ' + n.color;
+      row.innerHTML = '<span class="swatch"></span><span class="txt"></span><span class="del">✕</span>';
+      row.querySelector('.txt').textContent = n.text;
+      row.querySelector('.del').addEventListener('click', function(){
+        var list = getNotes(curYear,curMonth,selectedKey);
+        list.splice(idx,1);
+        setNotes(curYear,curMonth,selectedKey,list);
+        renderExisting();
+        renderGrid();
+      });
+      existingEl.appendChild(row);
+    });
+  }
+  function updateColorButtons(){
+    pickRed.classList.toggle('selRed', pickedColor==='red');
+    pickBlue.classList.toggle('selBlue', pickedColor==='blue');
+  }
+  pickRed.addEventListener('click', function(){ pickedColor='red'; updateColorButtons(); });
+  pickBlue.addEventListener('click', function(){ pickedColor='blue'; updateColorButtons(); });
+  closeSheet.addEventListener('click', function(){ sheetBg.classList.remove('show'); });
+  sheetBg.addEventListener('click', function(e){ if(e.target===sheetBg) sheetBg.classList.remove('show'); });
+
+  addNoteBtn.addEventListener('click', function(){
+    var text = noteInput.value.trim();
+    if(!text) return;
+    var list = getNotes(curYear,curMonth,selectedKey);
+    list.push({text:text, color:pickedColor});
+    setNotes(curYear,curMonth,selectedKey,list);
+    noteInput.value = "";
+    renderExisting();
+    renderGrid();
+  });
+  noteInput.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ addNoteBtn.click(); }
+  });
+
+  var goDaily = document.getElementById('goDaily');
+  goDaily.addEventListener('click', function(){
+    window.location.href = 'daily.html?y='+curYear+'&m='+(curMonth+1)+'&d='+selectedKey;
+  });
+
+  document.getElementById('yPrev').addEventListener('click', function(){ curYear--; renderAll(); });
+  document.getElementById('yNext').addEventListener('click', function(){ curYear++; renderAll(); });
+
+  renderAll();
+
+  document.getElementById('todayDaily').addEventListener('click', function(){
+    var y=today.getFullYear(), m=today.getMonth()+1, d=today.getDate();
+    window.location.href = 'daily.html?y='+y+'&m='+m+'&d='+d;
+  });
+})();
+</script>
+</body>
+</html>
