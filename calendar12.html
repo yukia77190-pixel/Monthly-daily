@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="12ヶ月手帳">
+<title>12ヶ月手帳</title>
+<style>
+  :root{
+    --bg:#14152b;
+    --bg2:#1c1f3d;
+    --card:#20234a;
+    --line:#33366a;
+    --ink:#f2efe8;
+    --sub:#9b9fd4;
+    --red:#e2564d;
+    --blue:#5b8fe0;
+    --gold:#c9a961;
+    --green:#4fd18f;
+    --accent1:#7b5fc9;
+    --accent2:#c9548f;
+    --c-howdy:#c9a961;
+    --c-sales:#e2564d;
+    --c-ol:#5b8fe0;
+    --c-sline:#4fd18f;
+    --c-memo:#9b9fd4;
+    --c-howdy2:#a78bfa;
+    --c-event:#f0a355;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);}
+  body{
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+    color:var(--ink);
+    overscroll-behavior-y:contain;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 10px;
+    background:linear-gradient(120deg,var(--accent1),var(--accent2));
+    position:sticky; top:0; z-index:20;
+  }
+  .headtop{display:flex; align-items:baseline; justify-content:space-between;}
+  .brand{font-size:13px; letter-spacing:2px; color:rgba(255,255,255,.75); font-weight:600;}
+  .yearRow{display:flex; align-items:center; gap:10px; margin-top:2px;}
+  .yearRow button{
+    background:rgba(255,255,255,.15); border:none; color:#fff; width:32px;height:32px;
+    border-radius:8px; font-size:18px; font-weight:700;
+  }
+  .yearRow h1{font-size:28px; margin:0; font-weight:800; letter-spacing:1px;}
+
+  .monthTabs{
+    display:flex; overflow-x:auto; gap:6px; padding:10px 12px 12px;
+    background:var(--bg2); position:sticky; top:0; z-index:19;
+    scrollbar-width:none;
+  }
+  .monthTabs::-webkit-scrollbar{display:none;}
+  .mtab{
+    flex:0 0 auto; padding:7px 13px; border-radius:20px; font-size:13px; font-weight:700;
+    background:var(--card); color:var(--sub); border:1px solid var(--line); white-space:nowrap;
+  }
+  .mtab.active{
+    background:linear-gradient(120deg,var(--accent1),var(--accent2));
+    color:#fff; border-color:transparent;
+  }
+
+  .summaryBar{display:flex; gap:7px; padding:0 10px 12px; background:var(--bg2);}
+  .sumPill{
+    flex:1; min-width:0; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:8px 4px; text-align:center; border-top:3px solid transparent;
+  }
+  .sumPill.p-howdy{border-top-color:var(--c-howdy);}
+  .sumPill.p-sales{border-top-color:var(--c-sales);}
+  .sumPill.p-ol{border-top-color:var(--c-ol);}
+  .sumPill.p-sline{border-top-color:var(--c-sline);}
+  .sumPill .num{font-size:19px; font-weight:800; color:var(--ink); line-height:1.1;}
+  .sumPill .lbl{font-size:10px; color:var(--sub); font-weight:700; margin-top:2px;}
+
+  main{padding:14px 10px 40px;}
+  .weekHead{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:6px; padding:0 2px;}
+  .weekHead div{text-align:center; font-size:11px; color:var(--sub); font-weight:700;}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
+  .cell{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    height:84px; padding:5px; position:relative; overflow:hidden;
+  }
+  .cell.empty{background:transparent; border-color:transparent;}
+  .cell.sun .dnum{color:var(--red);}
+  .cell.sat .dnum{color:var(--blue);}
+  .dnum{font-size:12px; font-weight:700; color:var(--ink); opacity:.85;}
+  .cell.today{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset;}
+  .cell.today .dnum{color:var(--gold);}
+  .notes{margin-top:3px; display:flex; flex-direction:column; gap:2px; overflow:hidden;}
+  .note{
+    font-size:10.5px; line-height:1.25; display:flex; gap:3px; align-items:flex-start;
+    overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  }
+  .note .t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .more{font-size:9.5px; color:var(--sub); font-weight:700; margin-top:1px;}
+  .note .dot{flex:0 0 auto; margin-top:3px; width:5px;height:5px; border-radius:1px; transform:rotate(45deg);}
+  .note.cat-howdy .dot{background:var(--c-howdy);}
+  .note.cat-sales .dot{background:var(--c-sales);}
+  .note.cat-ol .dot{background:var(--c-ol);}
+  .note.cat-sline .dot{background:var(--c-sline);}
+  .note.cat-memo .dot{background:var(--c-memo);}
+  .note.cat-howdy2 .dot{background:var(--c-howdy2);}
+  .note.cat-event .dot{background:var(--c-event);}
+  .note.cat-howdy span.t{color:#e8cf94;}
+  .note.cat-sales span.t{color:#ff9d94;}
+  .note.cat-ol span.t{color:#a9c6f5;}
+  .note.cat-sline span.t{color:#9df0c4;}
+  .note.cat-memo span.t{color:#c7caf0;}
+  .note.cat-howdy2 span.t{color:#d3c2fb;}
+  .note.cat-event span.t{color:#f7c496;}
+
+  /* Sheet */
+  .sheetBg{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:50;
+    display:none; align-items:flex-end;
+  }
+  .sheetBg.show{display:flex;}
+  .sheet{
+    background:var(--bg2); width:100%; border-radius:18px 18px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height:80vh; overflow-y:auto;
+  }
+  .sheet h2{margin:0 0 12px; font-size:16px; color:var(--gold); font-weight:700;}
+  .existing{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .exItem{
+    display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line);
+    border-radius:10px; padding:8px 10px; font-size:13px;
+  }
+  .exItem .swatch{width:9px;height:9px; border-radius:2px; transform:rotate(45deg); flex:0 0 auto;}
+  .exItem.cat-howdy .swatch{background:var(--c-howdy);}
+  .exItem.cat-sales .swatch{background:var(--c-sales);}
+  .exItem.cat-ol .swatch{background:var(--c-ol);}
+  .exItem.cat-sline .swatch{background:var(--c-sline);}
+  .exItem.cat-memo .swatch{background:var(--c-memo);}
+  .exItem.cat-howdy2 .swatch{background:var(--c-howdy2);}
+  .exItem.cat-event .swatch{background:var(--c-event);}
+  .exItem .txt{flex:1;}
+  .exItem .tm{color:var(--sub); font-size:11px; font-weight:700; flex:0 0 auto;}
+  .exItem .del{color:var(--sub); font-size:16px; padding:2px 6px;}
+
+  .inputRow{display:flex; gap:8px; margin-bottom:10px;}
+  .inputRow .timeInput{
+    flex:0 0 76px; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:11px 8px; color:var(--ink); font-size:15px; text-align:center;
+  }
+  .inputRow input{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:11px 12px; color:var(--ink); font-size:15px;
+  }
+  .colorPick{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
+  .colorPick button{
+    padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--card);
+    font-size:13px; font-weight:700; color:var(--sub);
+  }
+  .colorPick button.sel-howdy{background:rgba(201,169,97,.18); border-color:var(--c-howdy); color:#e8cf94;}
+  .colorPick button.sel-sales{background:rgba(226,86,77,.18); border-color:var(--c-sales); color:#ff9d94;}
+  .colorPick button.sel-ol{background:rgba(91,143,224,.18); border-color:var(--c-ol); color:#a9c6f5;}
+  .colorPick button.sel-sline{background:rgba(79,209,143,.18); border-color:var(--c-sline); color:#9df0c4;}
+  .colorPick button.sel-howdy2{background:rgba(167,139,250,.18); border-color:var(--c-howdy2); color:#d3c2fb;}
+  .colorPick button.sel-event{background:rgba(240,163,85,.18); border-color:var(--c-event); color:#f7c496;}
+  .actions{display:flex; gap:8px;}
+  .actions button{
+    flex:1; padding:12px; border-radius:10px; border:none; font-size:14px; font-weight:700;
+  }
+  .btnAdd{background:linear-gradient(120deg,var(--accent1),var(--accent2)); color:#fff;}
+  .btnClose{background:var(--card); color:var(--sub); border:1px solid var(--line);}
+  .btnDaily{
+    width:100%; margin-top:10px; padding:11px; border-radius:10px; border:1px solid var(--gold);
+    background:rgba(201,169,97,.12); color:var(--gold); font-size:13px; font-weight:700;
+  }
+
+  .hint{text-align:center; color:var(--sub); font-size:11px; padding:14px 20px 0;}
+  .toast{
+    position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:var(--gold); color:#20234a; font-weight:800; font-size:12px; padding:8px 16px; border-radius:20px;
+    transition:opacity .25s, transform .25s; z-index:60; white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .textImportBtn{
+    position:fixed; right:14px; bottom:calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(120deg,var(--accent1),var(--accent2)); color:#fff; border:none;
+    font-size:12px; font-weight:700; padding:11px 16px; border-radius:24px; z-index:15;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+  }
+  .tiSheet{max-height:88vh;}
+  .tiRow{display:flex; gap:8px; margin-bottom:10px;}
+  .tiRow select{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:9px; color:var(--ink); font-size:14px;
+  }
+  .tiTextarea{
+    width:100%; min-height:130px; background:var(--card); border:1px solid var(--line);
+    border-radius:10px; color:var(--ink); font-size:12.5px; padding:10px; font-family:inherit;
+    margin-bottom:10px; resize:vertical;
+  }
+  .previewList{display:flex; flex-direction:column; gap:6px; margin-bottom:12px; max-height:32vh; overflow-y:auto;}
+  .prevItem{display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 8px;}
+  .prevItem .pDay{flex:0 0 34px; font-size:11px; color:var(--gold); font-weight:800;}
+  .prevItem .pTime{flex:0 0 52px; background:transparent; border:none; border-bottom:1px dashed var(--line); color:var(--ink); font-size:11.5px; padding:3px;}
+  .prevItem .pText{flex:1; background:transparent; border:none; border-bottom:1px dashed var(--line); color:var(--ink); font-size:11.5px; padding:3px; min-width:0;}
+  .prevItem .pDel{color:var(--sub); font-size:15px; padding:2px 4px;}
+  .prevEmpty{color:var(--sub); font-size:12px; padding:6px 2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="headtop">
+    <div class="brand">◈ DAILY DIAMOND ◈</div>
+    <button id="todayDaily" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:14px;">📝 今日を開く</button>
+  </div>
+  <div class="yearRow">
+    <button id="yPrev">‹</button>
+    <h1 id="yearLabel">2026</h1>
+    <button id="yNext">›</button>
+  </div>
+</header>
+
+<div class="monthTabs" id="monthTabs"></div>
+<div class="summaryBar" id="summaryBar"></div>
+
+<main>
+  <div class="weekHead">
+    <div style="color:var(--red)">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div style="color:var(--blue)">土</div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="hint">日付をタップして予定を追加・確認できます</p>
+</main>
+
+<button class="textImportBtn" id="textImportBtn">📥 月の予定を取込</button>
+<div class="toast" id="toast"></div>
+
+<div class="sheetBg" id="tiSheetBg">
+  <div class="sheet tiSheet">
+    <h2>テキストで日程を取込</h2>
+    <div class="tiRow">
+      <select id="tiYear"></select>
+      <select id="tiMonth"></select>
+      <select id="tiCat">
+        <option value="howdy2" selected>◆ ハウディ</option>
+        <option value="howdy">◆ 研修</option>
+        <option value="sales">◆ CT</option>
+        <option value="ol">◆ OL</option>
+        <option value="sline">◆ Sライン</option>
+        <option value="event">◆ イベント</option>
+      </select>
+    </div>
+    <textarea class="tiTextarea" id="tiTextarea" placeholder="表からコピーしたテキストをここに貼り付け"></textarea>
+    <div class="actions" style="margin-bottom:12px;">
+      <button class="btnClose" id="tiParse">🔍 解析する</button>
+    </div>
+    <div class="previewList" id="tiPreview"></div>
+    <div class="actions">
+      <button class="btnClose" id="tiClose">閉じる</button>
+      <button class="btnAdd" id="tiCommit">この内容で取込む</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheetBg" id="sheetBg">
+  <div class="sheet">
+    <h2 id="sheetDate">7月1日 (水)</h2>
+    <div class="existing" id="existing"></div>
+    <div class="inputRow">
+      <input type="text" class="timeInput" id="timeInput" placeholder="20:00" maxlength="5">
+      <input type="text" id="noteInput" placeholder="例）PLR面談" maxlength="60">
+    </div>
+    <div class="colorPick">
+      <button id="pickHowdy" data-cat="howdy">◆ 研修</button>
+      <button id="pickSales" data-cat="sales">◆ CT</button>
+      <button id="pickOl" data-cat="ol">◆ OL</button>
+      <button id="pickSline" data-cat="sline">◆ Sライン</button>
+      <button id="pickHowdy2" data-cat="howdy2">◆ ハウディ</button>
+      <button id="pickEvent" data-cat="event">◆ イベント</button>
+    </div>
+    <div class="actions">
+      <button class="btnClose" id="closeSheet">閉じる</button>
+      <button class="btnAdd" id="addNote">追加する</button>
+    </div>
+    <button class="btnDaily" id="goDaily">📝 この日をデイリーで開く</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = "diamond_calendar_v1";
+  var state = load();
+  var today = new Date();
+  var curYear = today.getFullYear();
+  var curMonth = today.getMonth(); // 0-11
+  var pickedCat = "howdy";
+  var selectedKey = null;
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      var s = raw ? JSON.parse(raw) : {};
+      // 旧データ(color:red/blue)をカテゴリに移行
+      Object.keys(s).forEach(function(k){
+        s[k] = s[k].map(function(n){
+          if(!n.category){
+            n.category = (n.color==='red') ? 'sales' : 'memo';
+            n.time = n.time || '';
+            delete n.color;
+          }
+          return n;
+        });
+      });
+      return s;
+    }catch(e){ return {}; }
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function dayKey(y,m,d){ return y+"-"+(m+1)+"-"+d; }
+  function getNotes(y,m,d){
+    var k = dayKey(y,m,d);
+    return state[k] || [];
+  }
+  function sortNotes(list){
+    return list.slice().sort(function(a,b){
+      var ta = a.time || "99:99";
+      var tb = b.time || "99:99";
+      return ta < tb ? -1 : (ta > tb ? 1 : 0);
+    });
+  }
+  function setNotes(y,m,d,list){
+    var k = dayKey(y,m,d);
+    if(list.length===0){ delete state[k]; } else { state[k]=sortNotes(list); }
+    save();
+  }
+  function padTime(t){
+    t = (t||"").trim();
+    if(!t) return "";
+    var m = t.match(/^(\d{1,2}):(\d{2})$/);
+    if(!m) return t;
+    return (m[1].length===1 ? '0'+m[1] : m[1]) + ':' + m[2];
+  }
+
+  var monthTabsEl = document.getElementById('monthTabs');
+  var yearLabel = document.getElementById('yearLabel');
+  var gridEl = document.getElementById('grid');
+
+  function buildMonthTabs(){
+    monthTabsEl.innerHTML = "";
+    for(var m=0;m<12;m++){
+      var b = document.createElement('button');
+      b.className = 'mtab' + (m===curMonth ? ' active':'');
+      b.textContent = (m+1)+"月";
+      b.dataset.m = m;
+      b.addEventListener('click', function(){
+        curMonth = parseInt(this.dataset.m,10);
+        renderAll();
+      });
+      monthTabsEl.appendChild(b);
+    }
+  }
+
+  function renderAll(){
+    yearLabel.textContent = curYear + "年";
+    buildMonthTabs();
+    renderGrid();
+    renderSummary();
+  }
+
+  function renderSummary(){
+    var counts = { howdy:0, sales:0, ol:0, sline:0 };
+    var prefix = curYear + "-" + (curMonth+1) + "-";
+    Object.keys(state).forEach(function(k){
+      if(k.indexOf(prefix)!==0) return;
+      // 厳密に年-月-日 の月部分が一致するかチェック(11月と1月の誤マッチ防止)
+      var parts = k.split('-');
+      if(parseInt(parts[0],10)!==curYear || parseInt(parts[1],10)!==(curMonth+1)) return;
+      state[k].forEach(function(n){
+        if(counts.hasOwnProperty(n.category)) counts[n.category]++;
+      });
+    });
+    var defs = [
+      {key:'howdy', label:'研修'},
+      {key:'sales', label:'CT'},
+      {key:'ol', label:'OL'},
+      {key:'sline', label:'Sライン'}
+    ];
+    var bar = document.getElementById('summaryBar');
+    bar.innerHTML = "";
+    defs.forEach(function(def){
+      var pill = document.createElement('div');
+      pill.className = 'sumPill p-' + def.key;
+      pill.innerHTML = '<div class="num">'+counts[def.key]+'</div><div class="lbl">'+def.label+'</div>';
+      bar.appendChild(pill);
+    });
+  }
+
+  function renderGrid(){
+    gridEl.innerHTML = "";
+    var firstDow = new Date(curYear, curMonth, 1).getDay();
+    var daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+
+    for(var i=0;i<firstDow;i++){
+      var empty = document.createElement('div');
+      empty.className = 'cell empty';
+      gridEl.appendChild(empty);
+    }
+
+    for(var d=1; d<=daysInMonth; d++){
+      var dow = new Date(curYear,curMonth,d).getDay();
+      var cell = document.createElement('div');
+      cell.className = 'cell' + (dow===0?' sun':'') + (dow===6?' sat':'');
+      if(curYear===today.getFullYear() && curMonth===today.getMonth() && d===today.getDate()){
+        cell.classList.add('today');
+      }
+      var dnum = document.createElement('div');
+      dnum.className='dnum';
+      dnum.textContent = d;
+      cell.appendChild(dnum);
+
+      var notesWrap = document.createElement('div');
+      notesWrap.className='notes';
+      var allNotes = sortNotes(getNotes(curYear,curMonth,d));
+      var notes = allNotes.slice(0,2);
+      notes.forEach(function(n){
+        var row = document.createElement('div');
+        row.className = 'note cat-' + n.category;
+        var label = (n.time ? n.time+' ' : '') + n.text;
+        row.innerHTML = '<span class="dot"></span><span class="t">'+escapeHtml(label)+'</span>';
+        notesWrap.appendChild(row);
+      });
+      if(allNotes.length>2){
+        var more = document.createElement('div');
+        more.className='more';
+        more.textContent = '+'+(allNotes.length-2)+'件';
+        notesWrap.appendChild(more);
+      }
+      cell.appendChild(notesWrap);
+
+      cell.addEventListener('click', (function(dd){
+        return function(){ openSheet(dd); };
+      })(d));
+
+      gridEl.appendChild(cell);
+    }
+  }
+
+  function escapeHtml(s){
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // Sheet
+  var sheetBg = document.getElementById('sheetBg');
+  var sheetDate = document.getElementById('sheetDate');
+  var existingEl = document.getElementById('existing');
+  var timeInput = document.getElementById('timeInput');
+  var noteInput = document.getElementById('noteInput');
+  var catBtns = document.querySelectorAll('.colorPick button');
+  var closeSheet = document.getElementById('closeSheet');
+  var addNoteBtn = document.getElementById('addNote');
+  var youbi = ['日','月','火','水','木','金','土'];
+
+  function openSheet(d){
+    selectedKey = d;
+    var dow = new Date(curYear,curMonth,d).getDay();
+    sheetDate.textContent = (curMonth+1)+"月"+d+"日 ("+youbi[dow]+")";
+    timeInput.value = "";
+    noteInput.value = "";
+    pickedCat = "howdy";
+    updateCatButtons();
+    renderExisting();
+    sheetBg.classList.add('show');
+  }
+  function renderExisting(){
+    var notes = sortNotes(getNotes(curYear,curMonth,selectedKey));
+    existingEl.innerHTML = "";
+    if(notes.length===0){
+      var p = document.createElement('div');
+      p.style.cssText='color:var(--sub);font-size:12px;padding:2px 2px 4px;';
+      p.textContent = "まだ予定はありません";
+      existingEl.appendChild(p);
+      return;
+    }
+    notes.forEach(function(n){
+      var row = document.createElement('div');
+      row.className = 'exItem cat-' + n.category;
+      row.innerHTML = '<span class="swatch"></span><span class="tm"></span><span class="txt"></span><span class="del">✕</span>';
+      row.querySelector('.tm').textContent = n.time || '';
+      row.querySelector('.txt').textContent = n.text;
+      row.querySelector('.del').addEventListener('click', function(){
+        var list = getNotes(curYear,curMonth,selectedKey).filter(function(x){ return x!==n; });
+        setNotes(curYear,curMonth,selectedKey,list);
+        renderExisting();
+        renderGrid();
+        renderSummary();
+      });
+      existingEl.appendChild(row);
+    });
+  }
+  function updateCatButtons(){
+    catBtns.forEach(function(b){
+      b.classList.toggle('sel-'+b.dataset.cat, b.dataset.cat===pickedCat);
+    });
+  }
+  catBtns.forEach(function(b){
+    b.addEventListener('click', function(){ pickedCat = b.dataset.cat; updateCatButtons(); });
+  });
+  closeSheet.addEventListener('click', function(){ sheetBg.classList.remove('show'); });
+  sheetBg.addEventListener('click', function(e){ if(e.target===sheetBg) sheetBg.classList.remove('show'); });
+
+  addNoteBtn.addEventListener('click', function(){
+    var text = noteInput.value.trim();
+    if(!text) return;
+    var list = getNotes(curYear,curMonth,selectedKey);
+    list.push({text:text, category:pickedCat, time:padTime(timeInput.value)});
+    setNotes(curYear,curMonth,selectedKey,list);
+    timeInput.value = "";
+    noteInput.value = "";
+    renderExisting();
+    renderGrid();
+    renderSummary();
+  });
+  noteInput.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ addNoteBtn.click(); }
+  });
+
+  var goDaily = document.getElementById('goDaily');
+  goDaily.addEventListener('click', function(){
+    window.location.href = 'daily.html?y='+curYear+'&m='+(curMonth+1)+'&d='+selectedKey;
+  });
+
+  document.getElementById('yPrev').addEventListener('click', function(){ curYear--; renderAll(); });
+  document.getElementById('yNext').addEventListener('click', function(){ curYear++; renderAll(); });
+
+  renderAll();
+
+  document.getElementById('todayDaily').addEventListener('click', function(){
+    var y=today.getFullYear(), m=today.getMonth()+1, d=today.getDate();
+    window.location.href = 'daily.html?y='+y+'&m='+m+'&d='+d;
+  });
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // ---- テキスト貼り付け取込 ----
+  var tiSheetBg = document.getElementById('tiSheetBg');
+  var tiYear = document.getElementById('tiYear');
+  var tiMonth = document.getElementById('tiMonth');
+  var tiCat = document.getElementById('tiCat');
+  var tiTextarea = document.getElementById('tiTextarea');
+  var tiPreview = document.getElementById('tiPreview');
+  var parsedItems = [];
+
+  function fillTiSelects(){
+    tiYear.innerHTML = "";
+    for(var y=today.getFullYear()-1; y<=today.getFullYear()+2; y++){
+      var o = document.createElement('option');
+      o.value = y; o.textContent = y+'年';
+      if(y===curYear) o.selected = true;
+      tiYear.appendChild(o);
+    }
+    tiMonth.innerHTML = "";
+    for(var mo=1; mo<=12; mo++){
+      var o2 = document.createElement('option');
+      o2.value = mo; o2.textContent = mo+'月';
+      if(mo===curMonth+1) o2.selected = true;
+      tiMonth.appendChild(o2);
+    }
+  }
+
+  document.getElementById('textImportBtn').addEventListener('click', function(){
+    fillTiSelects();
+    tiTextarea.value = "";
+    parsedItems = [];
+    renderPreview();
+    tiSheetBg.classList.add('show');
+  });
+  document.getElementById('tiClose').addEventListener('click', function(){
+    tiSheetBg.classList.remove('show');
+  });
+  tiSheetBg.addEventListener('click', function(e){ if(e.target===tiSheetBg) tiSheetBg.classList.remove('show'); });
+
+  function parseScheduleText(text){
+    var lines = text.split(/\r?\n/);
+    var dayRe = /^\s*(\d{1,2})\.(\d{1,2})\s*\t?(.*)$/;
+    var entries = [];
+    var current = null;
+    lines.forEach(function(line){
+      var m = line.match(dayRe);
+      if(m){
+        if(current) entries.push(current);
+        current = { day: parseInt(m[2],10), lines: [] };
+        var rest = (m[3]||'').trim();
+        if(rest) current.lines.push(rest);
+      } else if(current){
+        var t = line.replace(/\t/g,' ').trim();
+        if(t) current.lines.push(t);
+      }
+    });
+    if(current) entries.push(current);
+
+    var results = [];
+    entries.forEach(function(e){
+      if(e.lines.length===0) return;
+      var joined = e.lines.join(' ');
+      var timeMatch = joined.match(/(\d{1,2}:\d{2})\s*-?\s*開始/);
+      var time = timeMatch ? padTime(timeMatch[1]) : '';
+      var titleParts = e.lines.filter(function(l){
+        return !/^\d{1,2}:\d{2}\s*-?\s*(受付|開始)$/.test(l) && l!=='SS' && l!=='SL' && l!=='オンライン';
+      });
+      var text2 = titleParts.join(' ').replace(/\s+/g,' ').trim();
+      if(!text2) text2 = joined.slice(0,40);
+      if(text2.length>50) text2 = text2.slice(0,48)+'…';
+      results.push({day:e.day, time:time, text:text2});
+    });
+    return results;
+  }
+
+  function renderPreview(){
+    tiPreview.innerHTML = "";
+    if(parsedItems.length===0){
+      var p = document.createElement('div');
+      p.className='prevEmpty';
+      p.textContent = '「解析する」を押すとここにプレビューが表示されます';
+      tiPreview.appendChild(p);
+      return;
+    }
+    parsedItems.forEach(function(item, idx){
+      var row = document.createElement('div');
+      row.className='prevItem';
+      row.innerHTML = '<div class="pDay"></div><input class="pTime"><input class="pText"><span class="pDel">✕</span>';
+      row.querySelector('.pDay').textContent = item.day+'日';
+      var timeInp = row.querySelector('.pTime');
+      timeInp.value = item.time;
+      timeInp.addEventListener('change', function(){ item.time = padTime(timeInp.value); });
+      var textInp = row.querySelector('.pText');
+      textInp.value = item.text;
+      textInp.addEventListener('input', function(){ item.text = textInp.value; });
+      row.querySelector('.pDel').addEventListener('click', function(){
+        parsedItems.splice(idx,1);
+        renderPreview();
+      });
+      tiPreview.appendChild(row);
+    });
+  }
+
+  document.getElementById('tiParse').addEventListener('click', function(){
+    var text = tiTextarea.value;
+    if(!text.trim()){ showToast('テキストが空です'); return; }
+    parsedItems = parseScheduleText(text);
+    renderPreview();
+    if(parsedItems.length===0) showToast('日付を検出できませんでした');
+  });
+
+  document.getElementById('tiCommit').addEventListener('click', function(){
+    if(parsedItems.length===0){ showToast('取込む内容がありません'); return; }
+    var y = parseInt(tiYear.value,10);
+    var m = parseInt(tiMonth.value,10) - 1;
+    var cat = tiCat.value;
+    var added = 0;
+    parsedItems.forEach(function(item){
+      if(!item.text) return;
+      var list = getNotes(y,m,item.day);
+      var dup = list.some(function(n){ return n.text===item.text; });
+      if(!dup){
+        list.push({text:item.text, category:cat, time:item.time});
+        setNotes(y,m,item.day,list);
+        added++;
+      }
+    });
+    if(y===curYear && m===curMonth) { renderGrid(); renderSummary(); }
+    tiSheetBg.classList.remove('show');
+    showToast(added+'件取り込みました');
+  });
+})();
+</script>
+</body>
+</html>
